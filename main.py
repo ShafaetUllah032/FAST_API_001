@@ -2,7 +2,7 @@ import json
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, Path, HTTPException, Query
 from pydantic import BaseModel, Field, computed_field
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 
 app = FastAPI()
@@ -37,6 +37,28 @@ class Patient(BaseModel):
         else:
             return "Obesity"
 
+class UpdatePatient(BaseModel):
+    name: Annotated[Optional[str], Field(default=None, description="Full name of the patient")]
+    city: Annotated[Optional[str], Field(default=None, description="City of the patient")]
+    age: Annotated[Optional[int], Field(default=None, gt=0, lt=113, description="Age of the patient")]
+    gender: Annotated[Optional[Literal['male', 'female']], Field(default=None, description="Gender of the patient")]
+    height: Annotated[Optional[float], Field(default=None, gt=0, description="Height of the patient in m")]
+    weight: Annotated[Optional[float], Field(default=None, gt=0, description="Weight of the patient in kg")]
+
+
+# def check_data(data: UpdatePatient):
+#     print(data)
+
+# demo_info = {
+#     "name": "John Doe",
+#     "city": "Los Angeles",
+#     "age": 30,
+#     "gender": "male",
+#     "weight": 70.0
+#     }
+
+# demo_patient=UpdatePatient(**demo_info)
+# check_data(demo_patient)
 
 
 def load_data():
@@ -99,4 +121,33 @@ def create_patient(patient: Patient):
     save_data(data)
     return JSONResponse(status_code=201, content=("Successfully ! created new patient"))
 
-                   
+@app.put("/update/{patient_id}")
+def update_patient(patient_id: str, update_data: UpdatePatient):
+
+    data=load_data()
+
+    if patient_id not in data:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+
+    existing_info=data[patient_id]
+
+    updated_info=update_data.model_dump(exclude_unset=True)
+
+    for key, value in updated_info.items():
+        existing_info[key]=value
+    
+    
+    existing_info['id']=patient_id
+
+    patient_dict=Patient(**existing_info)
+    existing_info=patient_dict.model_dump(exclude=["id"])
+    
+    data[patient_id]=existing_info
+    save_data(data)
+    return JSONResponse(status_code=200, content=("Successfully ! Upatated patient info"))
+
+@app.delete("/delete/{patient_id}")
+
+def delete_patient(patient_id):
+    pass
