@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, ConfigDict
 from fastapi import FastAPI
 from typing import Annotated, List, Literal
 from fastapi.responses import JSONResponse
@@ -14,6 +14,7 @@ with open('model.pkl','rb') as f:
 
 
 class PredictionRequest(BaseModel):
+    model_config = ConfigDict(case_insensitive=True)
     age: Annotated[int, Field(..., gt=0, lt=113, description='age of the client')]
     height: Annotated[float, Field(..., gt=0, description='height of the client in meters')]
     weight: Annotated[float, Field(..., gt=0, description='weight of the clident in kgs')]
@@ -68,9 +69,15 @@ class PredictionRequest(BaseModel):
             return 'no_issue'
 
 
+#print(f"The FASTAPI Is Called .............")
+@app.get('/')
+def root():
+    return {"message": "Fast API is running"}
+
 
 @app.post("/predict")
 def prediction(data: PredictionRequest):
+    print("Data from streamlit : {data}")
     input=pd.DataFrame([
         {
             "income_lpa":data.income_lpa,
